@@ -1,0 +1,65 @@
+@{
+    ViewBag.Title = "Home Page";
+}
+
+<div id="fun-chat-body" />
+<form id="fun-chat-form">
+    <input id="fun-chat-input" type="text" class="input-style" />
+</form>
+
+<style>
+    .input-style{
+        position: absolute;
+        display:none;
+    }
+</style>
+
+@section scripts {
+    <script src="/Scripts/jquery-3.3.1.js"></script>
+    <script src="/Scripts/jquery.signalR-2.4.2.js"></script>
+    <script src="/signalr/hubs"></script>   
+    
+    <script>
+        debugger;
+        const chatHub = $.connection.chatHub;
+        
+        const funChat = $("#fun-chat-body");
+        const funChatForm = $("#fun-chat-form");
+        const funChatInput = $("#fun-chat-input");
+        const chatroom ='@ViewBag.Chatroom';
+        
+        funChat.click((event)=>{
+             funChatInput.show()
+                .offset({left:event.clientX, top:event.clientY})
+                .focus();
+        })
+         
+        funChatForm.submit(()=>{
+             const message  = funChatInput.val()
+             const position = funChatInput.offset()
+             chatHub.server.sendMessage(chatroom, message, position.left, position.top);
+             funChatInput.val("").hide();
+             return false;
+        })
+        
+        $.connection.chatHub.client.onNewMessage=(username, message, left, top)=>{
+            var newMessage  =$("<a>")
+                .addClass("fun-chat-message")
+                .text(`${username || "Anonymous"}:${message}`)
+                .css({position:"absolute", cursor:"pointer"})
+                .offset({left:Math.random()*500, top:Math.random()*500})
+                .click(function(){
+                    const message  = window.prompt("message  ?")
+                    chatHub.server.sendPrivateMessage(username, message);
+                    return false;
+                })
+                
+            funChat.append(newMessage);
+        }
+        
+        
+        $.connection.hub.start().done(()=>{
+            chatHub.server.joinRoom(chatroom);
+        });
+    </script>
+}
